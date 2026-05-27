@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
 import { useAttendanceData } from '@/hooks/useAttendanceData';
@@ -12,7 +12,8 @@ import { toast } from 'sonner';
 
 export default function Dashboard() {
   const [showClearDialog, setShowClearDialog] = useState(false);
-  const { master, history, saveMaster, clearMaster } = useAttendanceData();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { master, history, masterFileName, saveMaster, clearMaster } = useAttendanceData();
 
   const handleClearMaster = () => {
     const success = clearMaster();
@@ -287,7 +288,7 @@ export default function Dashboard() {
     }
 
     const normalized = normalizeMasterRows(data);
-    const success = saveMaster(normalized as any);
+    const success = saveMaster(normalized as any, file.name);
     if (success) {
       toast.success(`Ambrish master loaded - ${normalized.length} records`);
     } else {
@@ -304,23 +305,77 @@ export default function Dashboard() {
       </h1>
 
       <div className="grid grid-cols-1 gap-6 w-full">
-        <Card className="w-full">
-          <CardHeader className="p-4 sm:p-6">
-            <CardTitle className="text-lg sm:text-xl">Upload Ambrish XLSX / CSV</CardTitle>
+        <Card className="w-full overflow-hidden border border-gray-100 dark:border-gray-800 shadow-sm">
+          <CardHeader className="p-4 sm:p-6 pb-2">
+            <CardTitle className="text-lg sm:text-xl font-semibold">Upload Ambrish XLSX / CSV</CardTitle>
             <p className="text-xs sm:text-sm text-gray-500 mt-1">
               Status: {master.length ? `${master.length} loaded` : 'Not loaded'}
             </p>
           </CardHeader>
-          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0 space-y-4">
-            <Input type="file" accept=".xlsx,.csv" onChange={onMasterUpload} />
-            {master.length > 0 && (
-              <Button
-                variant="destructive"
-                className="w-full"
-                onClick={() => setShowClearDialog(true)}
-              >
-                Remove Data
-              </Button>
+          <CardContent className="p-4 pt-2 sm:p-6 sm:pt-2 space-y-4">
+            {master.length > 0 ? (
+              <div className="flex flex-col items-center justify-center border border-emerald-100 dark:border-emerald-950 rounded-xl p-6 bg-emerald-50/40 dark:bg-emerald-950/10 text-center space-y-3">
+                <div className="p-3 bg-emerald-100 dark:bg-emerald-900/50 rounded-full text-emerald-600 dark:text-emerald-400">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-800 dark:text-gray-200">
+                    Active Database Loaded Successfully
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    File: <span className="font-semibold text-gray-900 dark:text-gray-100">{masterFileName || 'ambrish_list.xlsx'}</span>
+                  </p>
+                  <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mt-1">
+                    {master.length} active records ready for attendance
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2 w-full max-w-md pt-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1 relative cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 font-medium"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    Replace File
+                  </Button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".xlsx,.csv"
+                    onChange={onMasterUpload}
+                    className="hidden"
+                  />
+                  <Button
+                    variant="destructive"
+                    className="flex-1 font-medium"
+                    onClick={() => setShowClearDialog(true)}
+                  >
+                    Remove Data
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-800 hover:border-violet-500 dark:hover:border-violet-700 rounded-xl p-8 bg-gray-50/50 dark:bg-gray-950/20 cursor-pointer transition-all group duration-200">
+                <div className="p-4 bg-white dark:bg-gray-950 rounded-full shadow-sm border border-gray-100 dark:border-gray-800 group-hover:scale-105 transition-transform text-gray-400 group-hover:text-violet-500">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                </div>
+                <div className="mt-4 text-center">
+                  <span className="font-semibold text-gray-700 dark:text-gray-300 group-hover:text-violet-600 dark:group-hover:text-violet-400">
+                    Click to upload
+                  </span>
+                  <span className="text-gray-500 dark:text-gray-400"> or drag & drop</span>
+                  <p className="text-xs text-gray-400 mt-1.5 font-medium">Excel (.xlsx) or CSV (.csv) files only</p>
+                </div>
+                <input
+                  type="file"
+                  accept=".xlsx,.csv"
+                  onChange={onMasterUpload}
+                  className="hidden"
+                />
+              </label>
             )}
           </CardContent>
         </Card>

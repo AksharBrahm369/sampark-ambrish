@@ -7,12 +7,16 @@ export function useAttendanceData() {
   const [master, setMaster] = useState<AttendanceRecord[]>([]);
   const [history, setHistory] = useState<WeekRecord[]>([]);
 
+  const [masterFileName, setMasterFileName] = useState<string>('');
+
   const loadData = () => {
     try {
       const savedMaster = localStorage.getItem('ambrish_master');
       const savedHistory = localStorage.getItem('ambrish_history');
+      const savedFileName = localStorage.getItem('ambrish_master_filename');
       if (savedMaster) setMaster(JSON.parse(savedMaster));
       if (savedHistory) setHistory(JSON.parse(savedHistory));
+      if (savedFileName) setMasterFileName(savedFileName);
     } catch (e) {
       console.error('Local Storage Error', e);
     }
@@ -28,9 +32,16 @@ export function useAttendanceData() {
     };
   }, []);
 
-  const saveMaster = (newMaster: AttendanceRecord[]) => {
+  const saveMaster = (newMaster: AttendanceRecord[], fileName?: string) => {
     try {
       localStorage.setItem('ambrish_master', JSON.stringify(newMaster));
+      if (fileName) {
+        localStorage.setItem('ambrish_master_filename', fileName);
+        setMasterFileName(fileName);
+      } else {
+        localStorage.removeItem('ambrish_master_filename');
+        setMasterFileName('');
+      }
       setMaster(newMaster);
       window.dispatchEvent(new Event('master-updated'));
       window.dispatchEvent(new Event('storage'));
@@ -43,7 +54,9 @@ export function useAttendanceData() {
   const clearMaster = () => {
     try {
       localStorage.removeItem('ambrish_master');
+      localStorage.removeItem('ambrish_master_filename');
       setMaster([]);
+      setMasterFileName('');
       window.dispatchEvent(new Event('master-updated'));
       window.dispatchEvent(new Event('storage'));
       return true;
@@ -72,5 +85,5 @@ export function useAttendanceData() {
     window.dispatchEvent(new Event('storage'));
   };
 
-  return { master, history, saveMaster, clearMaster, saveWeek, deleteWeek };
+  return { master, history, masterFileName, saveMaster, clearMaster, saveWeek, deleteWeek };
 }
